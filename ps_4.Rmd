@@ -9,9 +9,11 @@ output: html_document
 # Problem Set 4, Hemanth Bharatha Chakravarthy
 # Because there are many plots here, the default option of 
 # echo = FALSE is being set
-knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(echo=FALSE, message=FALSE, warning=FALSE)
 # Including the relevant libraries
 library(tidyverse)
+library(ggplot2)
+library(ggthemes)
 # I'm using default Tidyverse styles here
 library(styler)
 library(lintr)
@@ -50,7 +52,7 @@ polls <- read_csv("ps_4_elections-poll-nc09-3.csv",
 
 # 1 Mad Libs
 
-```{r mad_libs_q1}
+```{r mad_libs_q1, include=FALSE}
 # Checking to see if there are any nonsense values for response
 # polls %>% 
 #   group_by(response) %>% 
@@ -94,7 +96,7 @@ There are **`r race_white_diff[1,1]`** respondents listed as “White” under `
 The first `response` of Rep came **`r time_diff`** minutes (rounded to the nearest minute) before the first response of Dem.
 
 # 2 Distribution of Votes Based on Race
-```{r table_q1, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+```{r table_q1}
 race <- polls %>% 
   select(race_eth, response, final_weight) %>% 
   filter(!is.na(response), 
@@ -138,9 +140,58 @@ race %>%
   columns = vars(Und),
   decimals = 0)
 ```
-# 3 Education vs Turnout Weights 
-```{r turnout_education_plot}
 
+# 3 Education vs Turnout Weights 
+
+```{r turnout_education_plot}
+educ_graph <- polls %>% 
+  filter(!is.na(response), 
+        educ != "[DO NOT READ] Refused") %>% 
+  select(educ, final_weight)  
+
+educ_graph %>% 
+  ggplot(aes(x = educ, y = final_weight)) +
+  geom_violin(width = 1) + 
+  coord_flip() +
+  geom_jitter(alpha=0.6, size=0.8, width = 0.26) +
+  labs(
+    title = "More Educated Matter Less in North Carolina 9th",
+    subtitle = "Poll gives more weight to people who are more likely to participate in polls", 
+    caption = "New York Times Upshot/Siena College 2018 live polls") +
+  ylab("Weight Given to Respondent in Calculating Poll Results") +
+  xlab(NULL) 
 ```
 
+# 4 Race, Gender vs Voting Republican
+The purpose of this plot is to study whether gender was a key factor of voting in the 9th District. However, it appears that while race playaed a great role, except for Hispanic women who were somewhat less likely to vote Republican than Hispanic men, other races showed insignificant gender-based difference.
+
+
+```{r gender_race_plot}
+gender_race <- polls %>% 
+  filter(!is.na(response), 
+        race_eth != "[DO NOT READ] Don't know/Refused",
+        response %in% c("Dem", "Rep", "Und", "3"),
+        !is.na(gender)
+        ) %>%  
+  group_by(gender, race_eth, response) %>% 
+  summarize(total = sum(final_weight)) %>%
+  spread(key = response, value = total) %>%
+  # set NA as 0
+  mutate_all(funs(replace(., is.na(.), 0))) %>% 
+  ungroup() %>% 
+  group_by(gender) %>% 
+  select(gender, race_eth, Rep) 
+
+gender_race %>% 
+  ggplot(aes(x = gender, y = Rep, color = gender)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~race_eth) +
+  scale_y_log10() +
+  labs(title = "White Women Also Voted Republican in North Carolina 9th Dist.",
+       subtitle = "Of Republican respondents, adjusting for turnout, there was little difference based on gender",
+       caption = "Data from NY Times Upshot") +
+  xlab("Gender of Respondent") +
+  ylab("Turnout Adjusted Republican Votes") +
+  theme_stata()
+```
 
