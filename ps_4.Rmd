@@ -1,0 +1,138 @@
+---
+title: 'Problem Set #4'
+author: "Hemanth Bharatha Chakravarthy"
+date: "2/23/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Problem Set 4, Hemanth Bharatha Chakravarthy
+# Because there are many plots here, the default option of 
+# echo = FALSE is being set
+knitr::opts_chunk$set(include = FALSE)
+# Including the relevant libraries
+library(tidyverse)
+# I'm using default Tidyverse styles here
+library(styler)
+library(lintr)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(knitr)
+# This package helps read our .csv file
+library(readr)
+library(janitor)
+# These are a part of the visualization/stylistic choices for this project
+library(ggridges)
+library(viridis)
+# Some useful computation is in lubridate
+library(lubridate)
+library(devtools)
+library(gt)
+# This project uses Harvard enrollment data obtained from the Registrar of the FAS
+# The .xlsx file can be found on Canvas
+# Loading the excel file skipping so that the titles of each column match those in the R df
+# Cleaning names
+polls <- read_csv("ps_4_elections-poll-nc09-3.csv", 
+                  col_types = cols(
+  .default = col_character(),
+  turnout_scale = col_double(),
+  turnout_score = col_double(),
+  w_LV = col_double(),
+  w_RV = col_double(),
+  final_weight = col_double(),
+  timestamp = col_datetime(format = "")
+  )) %>% 
+  clean_names()
+# Note on style: I'm using traditional Tidyverse style and 
+# This is auto-checked by `lintr::lint("test.R")````
+```
+
+# 1 Mad Libs
+
+```{r mad_libs_q1}
+# Checking to see if there are any nonsense values for response
+# polls %>% 
+#   group_by(response) %>% 
+#   summarize()
+# We know that all the values of response are fine based on the following being the result
+# response
+# <chr>
+# 3				
+# Dem				
+# Rep				
+# Und
+dem_rep_count <- polls %>% 
+  group_by(response) %>% 
+  count() %>% 
+  arrange()
+
+gender_diff <- polls %>% 
+  filter(gender != gender_combined) %>% 
+  count()
+
+race_white_diff <- polls %>% 
+  filter(race_eth == "White", race_eth != file_race_black) %>% 
+  count()
+
+time_rep_dem_diff <- polls %>% 
+  filter(response %in% c("Rep", "Dem")) %>% 
+  arrange(timestamp) %>% 
+  select(timestamp, response) 
+
+time_diff <- time_rep_dem_diff[3,1] - time_rep_dem_diff[1,1] 
+time_diff <- round(time_diff[1,1])
+```
+There were **`r dem_rep_count[2,2]`** respondents who supported the Democratic candidate.
+
+There were **`r (dem_rep_count[3,2] - dem_rep_count[4,2])`**. more respondents who favored the Republican candidate than who were Undecided.
+
+There are two gender variables (`gender` and `gender_combined`). There are **`r gender_diff[1,1]`** individuals for whom these variables have different values.
+
+There are **`r race_white_diff[1,1]`** respondents listed as “White” under `race_eth` who are not listed as “White” under `file_race_black`.
+
+The first `response` of Rep came **`r time_diff`** minutes (rounded to the nearest minute) before the first response of Dem.
+
+# 2 Distribution of Votes Based on Race
+```{r table_q1, include=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+race <- polls %>% 
+  select(race_eth, response, final_weight) %>% 
+  filter(!is.na(response), 
+        race_eth != "[DO NOT READ] Don't know/Refused",
+        response %in% c("Dem", "Rep", "Und")
+        ) %>%  
+  group_by(race_eth, response) %>% 
+  summarize(total = sum(final_weight)) %>% 
+  spread(key = response, value = total) %>% 
+  # set NA Und as 0
+  mutate_all(funs(replace(., is.na(.), 0))) %>% 
+  mutate(y = Dem + Rep + Und) %>% 
+  mutate(Dem = (Dem)/y) %>% 
+  mutate(Rep = (Rep)/y) %>% 
+  mutate(Und = (Und)/y) %>% 
+  select(race_eth, Dem, Rep, Und)
+
+# Table
+race %>%
+  gt(rowname_col = "race_eth") %>%
+  tab_header(title = "Polling Resutls in North Carolina 9th Congressional District") %>%
+  tab_source_note(
+    source_note = "Data from the GitHub User 'The Upshot'"
+  ) %>% 
+  # cols_label(
+  #   race_eth = html("Race"),
+  #   Dem = html("Democrat"),
+  #   Rep = html("Republican"),
+  #   Und = html("Undecided")
+  # ) %>% 
+  fmt_percent(
+  columns = vars(Dem),
+  decimals = 0) %>%
+  fmt_percent(
+  columns = vars(Rep),
+  decimals = 0) %>%
+  fmt_percent(
+  columns = vars(Und),
+  decimals = 0)
+```
+
