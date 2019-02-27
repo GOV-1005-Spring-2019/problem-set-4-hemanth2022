@@ -145,7 +145,7 @@ race %>%
   # header and source
   tab_header(title = "Polling Results in North Carolina 9th Congressional District") %>%
   tab_source_note(
-    source_note = "Data from GitHub User 'The Upshot'"
+    source_note = "Data from The New York Times Upshot"
   ) %>% 
   # Relabelling column
   # TO readers not familiar with the US, the full party names would be useful

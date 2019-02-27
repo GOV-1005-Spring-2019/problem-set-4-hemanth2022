@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/471426/b6b0f7bb2b2b42539586a3b48d0094fd
+bundleId: https://api.rpubs.com/api/v1/document/471426/b6b0f7bb2b2b42539586a3b48d0094fd
+url: http://rpubs.com/hemanthb/471426
+when: 1551259653.87957
