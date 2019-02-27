@@ -99,32 +99,35 @@ race <- polls %>%
   select(race_eth, response, final_weight) %>% 
   filter(!is.na(response), 
         race_eth != "[DO NOT READ] Don't know/Refused",
-        response %in% c("Dem", "Rep", "Und")
+        response %in% c("Dem", "Rep", "Und", "3")
         ) %>%  
   group_by(race_eth, response) %>% 
-  summarize(total = sum(final_weight)) %>% 
-  spread(key = response, value = total) %>% 
-  # set NA Und as 0
+  summarize(total = sum(final_weight)) %>%
+  spread(key = response, value = total) %>%
+  # set NA as 0
   mutate_all(funs(replace(., is.na(.), 0))) %>% 
-  mutate(y = Dem + Rep + Und) %>% 
-  mutate(Dem = (Dem)/y) %>% 
-  mutate(Rep = (Rep)/y) %>% 
-  mutate(Und = (Und)/y) %>% 
-  select(race_eth, Dem, Rep, Und)
-
+  ungroup() %>% 
+  group_by(race_eth) %>% 
+  mutate(y = Dem + Rep + Und + `3`) %>% 
+  mutate(Dem = (Dem)/y,
+         Rep = (Rep)/y,
+         Und = (Und)/y) %>% 
+  ungroup() %>% 
+  select(race_eth, Dem, Rep, Und) %>% 
+  slice(match(c("White", "Black", "Hispanic", "Asian", "Other"), race_eth))
+  
 # Table
 race %>%
   gt(rowname_col = "race_eth") %>%
-  tab_header(title = "Polling Resutls in North Carolina 9th Congressional District") %>%
+  tab_header(title = "Polling Results in North Carolina 9th Congressional District") %>%
   tab_source_note(
-    source_note = "Data from the GitHub User 'The Upshot'"
+    source_note = "Data from GitHub User 'The Upshot'"
   ) %>% 
-  # cols_label(
-  #   race_eth = html("Race"),
-  #   Dem = html("Democrat"),
-  #   Rep = html("Republican"),
-  #   Und = html("Undecided")
-  # ) %>% 
+  cols_label(
+    Dem = html("Democrat"),
+    Rep = html("Republican"),
+    Und = html("Undecided")
+  ) %>%
   fmt_percent(
   columns = vars(Dem),
   decimals = 0) %>%
@@ -135,4 +138,9 @@ race %>%
   columns = vars(Und),
   decimals = 0)
 ```
+# 3 Education vs Turnout Weights 
+```{r turnout_education_plot}
+
+```
+
 
